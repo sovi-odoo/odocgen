@@ -2,6 +2,7 @@
 
 let pageContents = document.getElementById("data")
 let statusUI = document.getElementById("status")
+let quoteUI = document.getElementById("quote")
 
 const itemsPerPage = 40
 let rangeStart = 0
@@ -124,3 +125,4 @@ function onSearchEdited() {
 }
 
 onSearchEdited()
+quoteUI.innerHTML = '<abbr title="Quote of The Request">QoTR</abbr>: ' + globalQuoteList[(Math.random() * globalQuoteList.length) | 0]

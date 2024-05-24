@@ -1,0 +1,65 @@
+#################################################
+# Video games
+#################################################
+
+    It's dangerous to go alone! Take this.
+    It's a secret to everybody.
+    <div style="display: inline-block; cursor: pointer;" onclick="this.style = 'display: inline-block; transform: rotate(360deg); transition-property: all; transition-duration: 2s;'">Do a barrel roll!</div>
+    "Tell my wife... I had another wife..." *dies*
+    Well done. Here come the test results: "You are a horrible person." That's what it says: a horrible person. We weren't even testing for that.
+    Look at you, sailing through the air majestically. Like an eagle... piloting a blimp.
+
+#################################################
+# Programming
+#################################################
+
+    Back in my day we didn’t have any fancy IDEs. We had sticks. Two sticks and a rock for the entire coding team. And we had to share the rock!
+    When life gives you lemons, rewrite the lemons in Rust. Then in Lisp. Then back in Rust.
+    "Trust me. I know what I'm doing." *production crashes*
+    I used to be a programmer like you then I took an arrow to the wrist.
+    Should array indices start at 0 or 1? My compromise of 0.5 was rejected without, I thought, proper consideration.
+    "It always takes longer than you expect, even when you take into account Hofstadter's Law." - Hofstadter's Law
+    Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live.
+    I love deadlines. I like the whooshing sound they make as they fly by.
+    Any sufficiently complicated C or Fortran program contains an ad hoc informally-specified bug-ridden slow implementation of half of Common Lisp.
+    Imagine if every Thursday your shoes exploded if you tied them the usual way. This happens to us all the time with computers, and nobody thinks of complaining.
+    The most likely way for the world to be destroyed, most experts agree, is by accident. That's where we come in; we're computer professionals. We cause accidents.
+    If the automobile had followed the same development cycle as the computer, a Rolls-Royce would today cost $100, get a million miles per gallon, and explode once a year, killing everyone inside.
+    Ah, the "Birds fly. Except penguins, kiwis, ostriches, ..." problem.
+    There are only two things wrong with C++: The initial concept and the implementation.
+    Today we will discuss and demonstrate lazy evaluation. Any questions?
+    Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.
+    I don't know how many of you have ever met Dijkstra, but you probably know that arrogance in computer science is measured in nanodijkstras.
+    Whenever I hear someone mentioning the word "framework", my hopes of seeing actual working code are devastated. 
+    Applications programming today is a race between software engineers, who strive to produce idiot-proof programs, and the Universe which strives to produce bigger idiots. So far, the Universe is winning.
+    As I've gained more experience with Perl it strikes me that it resembles Lisp in many ways, albeit Lisp as channeled by an awk script on acid.
+    If we didn't reinvent the wheel over and over, we'd never have steel belted radials.
+    I never say I’m a Perl programmer or a Perl developer. That’s like a surgeon saying "I handle knives".
+    Nothing is as permanent as a temporary solution that works.
+    Give a man a program, and he'll be frustrated for a day. Teach a man to program, and he'll be frustrated for a lifetime.
+    People sometimes ask me if it is a sin in the Church of Emacs to use vi. Using a free version of vi is not a sin; it is a penance. So happy hacking.
+    The memory management on the PowerPC can be used to frighten small children.
+    We all know Linux is great... it does infinite loops in 5 seconds.
+
+#################################################
+# Other
+#################################################
+
+    *quacks at you violently*
+    Two hunters meet. Both are dead.
+    uwu
+    Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.
+    Part of the inhumanity of the computer is that, once it is competently programmed and working smoothly, it is completely honest.
+    "Computers are useless. They can only give you answers." - Pablo Picasso
+    If all else fails, read the instructions.
+    In theory, theory and practice are the same. In practice they are different.
+    Sharing knowledge is the most fundamental act of friendship. Because it is a way you can give something without loosing something.
+    People said I should accept the world. Bullshit! I don't accept the world.
+    Sharing is good, and with digital technology, sharing is easy.
+    A computer is like air conditioning -- it becomes useless when you open Windows.
+    Intelligence is the ability to avoid doing work, yet getting the work done.
+    Don't ever make the mistake of thinking that you can design something better than what you get from ruthless massively parallel trial-and-error with a feedback cycle. That's giving your intelligence much too much credit.
+    Some people have told me they don't think a fat penguin really embodies the grace of Linux, which just tells me they have never seen an angry penguin charging at them in excess of 100mph.
+    The fact is, there aren't just two sides to any issue, there's almost always a range of responses, and "it depends" is almost always the right answer in any big question.
+    On the internet nobody can hear you being subtle.
+    <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Free money!</a>

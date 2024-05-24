@@ -274,10 +274,15 @@ fn write_output(state: &State, output: &str) -> std::io::Result<()> {
 
     std::fs::create_dir_all(format!("{output}/class"))?;
 
-    std::fs::write(format!("{output}/index.js"), include_bytes!("../static/index.js"))?;
-    std::fs::write(format!("{output}/index.html"), include_bytes!("../static/index.html"))?;
-    std::fs::write(format!("{output}/class/class.js"), include_bytes!("../static/class.js"))?;
-    std::fs::write(format!("{output}/class/class.css"), include_bytes!("../static/class.css"))?;
+    std::fs::write(format!("{output}/index.js"), include_bytes!("../embeded/index.js"))?;
+    std::fs::write(format!("{output}/index.html"), include_bytes!("../embeded/index.html"))?;
+    std::fs::write(format!("{output}/class/class.js"), include_bytes!("../embeded/class.js"))?;
+    std::fs::write(format!("{output}/class/class.css"), include_bytes!("../embeded/class.css"))?;
+
+    let quotes = include_str!("../embeded/quotes.list")
+        .split('\n')
+        .map(|x| x.trim())
+        .filter(|x| !x.is_empty() && !x.starts_with('#'));
 
     let mut db_js = File::create(format!("{output}/db.js"))?;
     db_js.write_all(b"'use strict'\nconst globalIndex={")?;
@@ -288,7 +293,7 @@ fn write_output(state: &State, output: &str) -> std::io::Result<()> {
     }
     db_js.write_all(b"],")?;
 
-    db_js.write_all(b"methods:{\n")?;
+    db_js.write_all(b"methods:{")?;
     for (c_name, c_data) in state.classes.sorted_iter() {
         if let Some(orig) = &c_data.original {
             for m_name in orig.methods.sorted_keys() {
@@ -318,9 +323,13 @@ fn write_output(state: &State, output: &str) -> std::io::Result<()> {
             }
         }
     }
-    db_js.write_all(b"},")?;
+    db_js.write_all(b"}\n")?;
 
-    db_js.write_all(b"}")?;
+    db_js.write_all(b"};const globalQuoteList=[")?;
+    for quote in quotes {
+        write!(&mut db_js, "{quote:?},")?;
+    }
+    db_js.write_all(b"]")?;
 
     std::mem::drop(db_js);
 
