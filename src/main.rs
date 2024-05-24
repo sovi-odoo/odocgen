@@ -129,10 +129,21 @@ impl State {
                                     if let Some(class_name) = stmt.value.clone().constant_expr().map(|x| x.value.str()).flatten() {
                                         class_names.push(class_name);
                                     }
-                                } else if name == "_inherit" {
+                                } else if name == "_inherit" || name == "_inherits" {
                                     inherits = true;
+
                                     if let Some(class_name) = stmt.value.clone().constant_expr().map(|x| x.value.str()).flatten() {
                                         class_names.push(class_name);
+                                    }
+
+                                    if let Some(inherits_list) = stmt.value.clone().list_expr() {
+                                        for element in inherits_list.elts {
+                                            if let Some(class_name) = element.clone().constant_expr().map(|x| x.value.str()).flatten() {
+                                                let _ = class_name;
+                                                // Broken
+                                                // class_names.push(class_name);
+                                            }
+                                        }
                                     }
                                 }
                             }
