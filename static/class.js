@@ -1,3 +1,5 @@
+"use strict"
+
 {
     const parts = location.href.split("#")
     const id = parts[parts.length - 1]

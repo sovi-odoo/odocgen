@@ -1,83 +1,126 @@
-let elem = document.getElementById("data")
+"use strict"
 
-function update() {
-    const needle = document.getElementById("search").value
+let pageContents = document.getElementById("data")
+let statusUI = document.getElementById("status")
+
+const itemsPerPage = 40
+let rangeStart = 0
+let rangeEnd = itemsPerPage
+
+function resetRange() {
+    rangeStart = 0
+    rangeEnd = itemsPerPage
+    updateStatus()
+}
+
+function buildClassElement(name) {
+    let link = document.createElement("a")
+    link.setAttribute("href", `class/${name}.html`)
+    link.setAttribute("target", "_blank")
+    link.innerText = name
+
+    let element = document.createElement("li")
+    element.setAttribute("class", "g")
+    element.innerText = "[class] "
+    element.appendChild(link)
+
+    return element
+}
+
+function buildMemberElement(type, name, data) {
+    const typeLetter = type[0]
+
+    let link = document.createElement("a")
+    let href = `class/${data.c}.html#${typeLetter}-${name}`
+    link.setAttribute("href", href)
+    link.setAttribute("target", "_blank")
+    link.innerText = name
+
+    let element = document.createElement("li")
+    element.setAttribute("class", "g")
+    element.innerHTML = `[${type}] `
+    element.appendChild(link)
+    element.innerHTML += " of " + data.c
+    if (!data.o) element.innerHTML += " (inherited)"
+
+    return element
+}
+
+function updateStatus() {
+    statusUI.innerText = `${rangeStart} to ${rangeEnd}`
+}
+
+function updatePage() {
+    const needles = document.getElementById("search").value.split(" ")
+    
+    // Clear
+    pageContents.innerText = ""
+
+    let count = 0
+
+    function found(builder) {
+        if (rangeStart <= count && count < rangeEnd) {
+            pageContents.appendChild(builder())
+        }
+
+        count++
+    }
+
+    function hasNeedles(name) {
+        for (const needle of needles) {
+            if (!name.includes(needle)) {
+                return false
+            }
+        }
+
+        return true
+    }
 
     for (const cls of globalIndex.classes) {
-        const sub = document.getElementById(`c-${cls}`)
-        sub.hidden = !cls.includes(needle)
+        if (hasNeedles(cls)) {
+            found(() => buildClassElement(cls))
+            if (count === rangeEnd) return
+        }
     }
 
     for (const mName in globalIndex.methods) {
-        const mData = globalIndex.methods[mName]
-        const sub = document.getElementById(`m-${mName}-c-${mData.c}`)
-        sub.hidden = !mName.includes(needle)
+        if (hasNeedles(mName)) {
+            const mData = globalIndex.methods[mName]
+            found(() => buildMemberElement("method", mName, mData))
+            if (count === rangeEnd) return
+        }
     }
 
     for (const fName in globalIndex.fields) {
-        const fData = globalIndex.fields[fName]
-        const sub = document.getElementById(`f-${fName}-c-${fData.c}`)
-        sub.hidden = !fName.includes(needle)
+        if (hasNeedles(fName)) {
+            const fData = globalIndex.fields[fName]
+            found(() => buildMemberElement("field", fName, fData))
+            if (count === rangeEnd) return
+        }
     }
 }
 
-{
-    const needle = document.getElementById("search").value
-    const subElemType = "li"
+function pageChange(increment) {
+    rangeStart += increment
+    rangeEnd += increment
 
-    for (const cls of globalIndex.classes) {
-        let link = document.createElement("a")
-        link.setAttribute("href", `class/${cls}.html`)
-        link.setAttribute("target", "_blank")
-        link.innerText = cls
+    if (rangeStart < 0) resetRange()
 
-        let sub = document.createElement("p")
-        sub.setAttribute("id", `c-${cls}`)
-        sub.setAttribute("class", "g")
-        sub.hidden = !cls.includes(needle)
-        sub.innerText = "[class] "
-        sub.appendChild(link)
-        elem.appendChild(sub)
-    }
-
-    for (const mName in globalIndex.methods) {
-        const mData = globalIndex.methods[mName]
-
-        let link = document.createElement("a")
-        let href = `class/${mData.c}.html#m-${mName}`
-        link.setAttribute("href", href)
-        link.setAttribute("target", "_blank")
-        link.innerText = mName
-
-        let sub = document.createElement(subElemType)
-        sub.setAttribute("id", `m-${mName}-c-${mData.c}`)
-        sub.setAttribute("class", "g")
-        sub.hidden = !mName.includes(needle)
-        sub.innerHTML = "[method] "
-        sub.appendChild(link)
-        sub.innerHTML += " of " + mData.c
-        if (!mData.o) sub.innerHTML += " (inherited)"
-        elem.appendChild(sub)
-    }
-
-    for (const fName in globalIndex.fields) {
-        const fData = globalIndex.fields[fName]
-
-        let link = document.createElement("a")
-        let href = `class/${fData.c}.html#f-${fName}`
-        link.setAttribute("href", href)
-        link.setAttribute("target", "_blank")
-        link.innerText = fName
-
-        let sub = document.createElement(subElemType)
-        sub.setAttribute("id", `f-${fName}-c-${fData.c}`)
-        sub.setAttribute("class", "g")
-        sub.hidden = !fName.includes(needle)
-        sub.innerText = "[field] "
-        sub.appendChild(link)
-        sub.innerHTML += " of " + fData.c
-        if (!fData.o) sub.innerHTML += " (inherited)"
-        sub.innerHTML += "<br />"
-        elem.appendChild(sub)
-    }
+    updateStatus()
+    updatePage()
 }
+
+function pageNext() {
+    pageChange(itemsPerPage)
+}
+
+function pagePrevious() {
+    pageChange(-itemsPerPage)
+}
+
+function onSearchEdited() {
+    resetRange()
+    updatePage()
+}
+
+onSearchEdited()
