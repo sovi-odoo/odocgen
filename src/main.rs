@@ -100,11 +100,10 @@ impl LocalData {
     }
 }
 
-fn main() {
-    let mut state = State::default();
-    for filename in std::env::args().skip(1) {
-        let code = std::fs::read_to_string(&filename).unwrap();
-        let result = rustpython_parser::parse(&code, rustpython_parser::Mode::Module, &filename).unwrap();
+impl State {
+    fn parse_file(&mut self, filename: String) -> Result<(), Box<dyn std::error::Error>> {
+        let code = std::fs::read_to_string(&filename)?;
+        let result = rustpython_parser::parse(&code, rustpython_parser::Mode::Module, &filename)?;
 
         let filename_rc = Rc::new(filename);
 
@@ -131,9 +130,9 @@ fn main() {
                                         class_names.push(class_name);
                                     }
                                 } else if name == "_inherit" {
+                                    inherits = true;
                                     if let Some(class_name) = stmt.value.clone().constant_expr().map(|x| x.value.str()).flatten() {
                                         class_names.push(class_name);
-                                        inherits = true;
                                     }
                                 }
                             }
@@ -202,12 +201,34 @@ fn main() {
 
                 let local_data = Rc::new(local_data);
                 for name in class_names {
-                    let class_data = state.classes.entry(name).or_default();
+                    let class_data = self.classes.entry(name).or_default();
                     if inherits {
                         class_data.inherits.push(Rc::clone(&local_data));
                     } else {
                         class_data.original = Some(Rc::clone(&local_data));
                     }
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn main() {
+    let mut state = State::default();
+    for addons_path in std::env::args().skip(1) {
+        for addons_entry in std::fs::read_dir(&addons_path).unwrap() {
+            let models_path = addons_entry.unwrap().path().join("models");
+            match std::fs::metadata(&models_path) {
+                Ok(metadata) if metadata.is_dir() => (),
+                _ => continue,
+            }
+            
+            for models_entry in std::fs::read_dir(&models_path).unwrap() {
+                let models_entry = models_entry.unwrap().path().to_str().unwrap().to_string();
+                if models_entry.ends_with(".py") {
+                    state.parse_file(models_entry).unwrap();
                 }
             }
         }
