@@ -1,4 +1,16 @@
 use std::{collections::HashMap, fs::File, io::Write, rc::Rc};
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Directory to write output in (deleted if exists)
+    #[arg(long, short)]
+    output: String,
+
+    /// Directories to find addons in (e.g. "odoo/addons")
+    addons_dirs: Vec<String>,
+}
 
 #[derive(Debug, Default)]
 struct State {
@@ -227,8 +239,9 @@ impl State {
 }
 
 fn main() {
+    let cli = Cli::parse();
     let mut state = State::default();
-    for addons_path in std::env::args().skip(1) {
+    for addons_path in cli.addons_dirs {
         for addons_entry in std::fs::read_dir(&addons_path).unwrap() {
             let models_path = addons_entry.unwrap().path().join("models");
             match std::fs::metadata(&models_path) {
@@ -249,69 +262,70 @@ fn main() {
         c_data.inherits.sort_by(|x, y| x.filename.cmp(&y.filename));
     }
 
-    write_output(&state).unwrap();
+    write_output(&state, &cli.output).unwrap();
 }
 
-fn write_output(state: &State) -> std::io::Result<()> {
-    match std::fs::remove_dir_all("output") {
+fn write_output(state: &State, output: &str) -> std::io::Result<()> {
+    match std::fs::remove_dir_all(output) {
         Ok(()) => (),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => (),
         Err(err) => return Err(err),
     }
 
-    std::fs::create_dir_all("output/class")?;
+    std::fs::create_dir_all(format!("{output}/class"))?;
 
-    std::fs::write("output/index.html", include_bytes!("../static/index.html"))?;
-    std::fs::write("output/class/class.js", include_bytes!("../static/class.js"))?;
-    std::fs::write("output/class/class.css", include_bytes!("../static/class.css"))?;
+    std::fs::write(format!("{output}/index.js"), include_bytes!("../static/index.js"))?;
+    std::fs::write(format!("{output}/index.html"), include_bytes!("../static/index.html"))?;
+    std::fs::write(format!("{output}/class/class.js"), include_bytes!("../static/class.js"))?;
+    std::fs::write(format!("{output}/class/class.css"), include_bytes!("../static/class.css"))?;
 
-    let mut index_js = File::create("output/index.js")?;
-    index_js.write_all(b"'use strict'\nconst globalIndex = {\n")?;
+    let mut db_js = File::create(format!("{output}/db.js"))?;
+    db_js.write_all(b"'use strict'\nconst globalIndex={")?;
 
-    index_js.write_all(b"classes: [\n")?;
+    db_js.write_all(b"classes:[")?;
     for name in state.classes.sorted_keys() {
-        writeln!(&mut index_js, "{name:?},")?;
+        write!(&mut db_js, "{name:?},")?;
     }
-    index_js.write_all(b"],\n")?;
+    db_js.write_all(b"],")?;
 
-    index_js.write_all(b"methods: {\n")?;
+    db_js.write_all(b"methods:{\n")?;
     for (c_name, c_data) in state.classes.sorted_iter() {
         if let Some(orig) = &c_data.original {
             for m_name in orig.methods.sorted_keys() {
-                writeln!(&mut index_js, "{m_name:?}:{{o:true,c:{c_name:?}}},")?;
+                write!(&mut db_js, "{m_name:?}:{{o:true,c:{c_name:?}}},")?;
             }
         }
 
         for data in c_data.inherits.iter() {
             for m_name in data.methods.keys() {
-                writeln!(&mut index_js, "{m_name:?}:{{o:false,c:{c_name:?}}},")?;
+                write!(&mut db_js, "{m_name:?}:{{o:false,c:{c_name:?}}},")?;
             }
         }
     }
-    index_js.write_all(b"},\n")?;
+    db_js.write_all(b"},")?;
 
-    index_js.write_all(b"fields: {\n")?;
+    db_js.write_all(b"fields:{")?;
     for (c_name, c_data) in state.classes.sorted_iter() {
         if let Some(orig) = &c_data.original {
             for f_name in orig.fields.keys() {
-                writeln!(&mut index_js, "{f_name:?}:{{o:true,c:{c_name:?}}},")?;
+                write!(&mut db_js, "{f_name:?}:{{o:true,c:{c_name:?}}},")?;
             }
         }
 
         for data in c_data.inherits.iter() {
             for f_name in data.fields.keys() {
-                writeln!(&mut index_js, "{f_name:?}:{{o:false,c:{c_name:?}}},")?;
+                write!(&mut db_js, "{f_name:?}:{{o:false,c:{c_name:?}}},")?;
             }
         }
     }
-    index_js.write_all(b"},\n")?;
+    db_js.write_all(b"},")?;
 
-    index_js.write_all(b"}\n")?;
+    db_js.write_all(b"}")?;
 
-    std::mem::drop(index_js);
+    std::mem::drop(db_js);
 
     for (c_name, c_data) in state.classes.sorted_iter() {
-        let mut html = File::create(format!("output/class/{c_name}.html"))?;
+        let mut html = File::create(format!("{output}/class/{c_name}.html"))?;
         html.write_all(concat!(
             r##"<!doctype html>"##,
             r##"<html lang="en">"##,
