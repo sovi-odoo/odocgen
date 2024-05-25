@@ -18,3 +18,16 @@ ul {
     margin: 0;
     padding-left: 14px;
 }
+
+.position {
+    visibility: hidden;
+    color: purple;
+}
+
+details[open] .position {
+    visibility: visible;
+}
+
+*:hover > .position {
+    visibility: visible;
+}

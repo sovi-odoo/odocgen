@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs::File, io::Write, rc::Rc};
 use clap::Parser;
+use rustpython_parser::ast::{Ranged, TextSize};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -32,6 +33,8 @@ struct LocalData {
 
 #[derive(Debug, Default)]
 struct MethodData {
+    pub line_col: (usize, usize),
+
     pub args: Vec<String>,
     pub var_arg: Option<String>,
     pub kw_only_args: Vec<String>,
@@ -42,6 +45,8 @@ struct MethodData {
 
 #[derive(Debug, Default)]
 struct FieldData {
+    pub line_col: (usize, usize),
+
     pub declaration: String,
 }
 
@@ -89,7 +94,8 @@ impl LocalData {
         if !self.fields.is_empty() {
             write!(html, "<h3>Fields</h3>")?;
             for (f_name, f_data) in self.fields.sorted_iter() {
-                write!(html, r##"<details><summary id="f-{f_name}">{f_name}</summary>"##)?;
+                let (line, _) = f_data.line_col;
+                write!(html, r##"<details><summary id="f-{f_name}">{f_name} <span class="position">@ line {line}</span></summary>"##)?;
                 write!(html, r##"<pre>{}</pre></details>"##, f_data.declaration)?;
             }
         }
@@ -98,12 +104,13 @@ impl LocalData {
             write!(html, "<h3>Methods</h3>")?;
             for (m_name, m_data) in self.methods.sorted_iter() {
                 let m_str = m_data.to_string();
+                let (line, _) = m_data.line_col;
                 
                 if let Some(doc_string) = &m_data.doc_string {
-                    write!(html, r##"<details><summary id="m-{m_name}">{m_name}({m_str})</summary>"##)?;
+                    write!(html, r##"<details><summary id="m-{m_name}">{m_name}({m_str}) <span class="position">@ line {line}</span></summary>"##)?;
                     write!(html, r##"<pre>{doc_string}</pre></details>"##)?;
                 } else {
-                    write!(html, r##"<ul id="m-{m_name}"><li>{m_name}({m_str})</li></ul>"##)?;
+                    write!(html, r##"<ul id="m-{m_name}"><li>{m_name}({m_str}) <span class="position">@ line {line}</span></li></ul>"##)?;
                 }
             }
         }
@@ -116,6 +123,7 @@ impl State {
     fn parse_file(&mut self, filename: String) -> Result<(), Box<dyn std::error::Error>> {
         let code = std::fs::read_to_string(&filename)?;
         let result = rustpython_parser::parse(&code, rustpython_parser::Mode::Module, &filename)?;
+        let line_data = parse_line_data(&code);
 
         let filename_rc = Rc::new(filename);
 
@@ -135,6 +143,7 @@ impl State {
                                 let name = &name.id;
                                 if !name.starts_with('_') {
                                     let mut field_data = FieldData::default();
+                                    field_data.line_col = find_line_col(&line_data, stmt.start());
                                     field_data.declaration = code[stmt.range.start().to_usize()..stmt.range.end().to_usize()].to_string();
                                     local_data.fields.insert(name.to_string(), field_data);
                                 } else if name == "_name" {
@@ -183,6 +192,7 @@ impl State {
 
                         let name = stmt.name.to_string();
                         let mut method_data = MethodData::default();
+                        method_data.line_col = find_line_col(&line_data, stmt.start());
 
                         method_data.args = stmt.args.args
                             .iter()
@@ -235,6 +245,34 @@ impl State {
         }
 
         Ok(())
+    }
+}
+
+fn parse_line_data(code: &str) -> Vec<usize> {
+    let mut result = Vec::new();
+    for (i, b) in code.bytes().enumerate() {
+        if b == b'\n' {
+            result.push(i);
+        }
+    }
+
+    result
+}
+
+fn find_line_col(line_data: &[usize], position: TextSize) -> (usize, usize) {
+    let position = position.to_usize();
+    for (i, &step) in line_data.iter().enumerate() {
+        if step > position {
+            match line_data.get(i - 1) {
+                Some(&last_step) => return (i + 1, position - last_step),
+                None => return (1, position + 1),
+            }
+        }
+    }
+
+    match line_data.last() {
+        Some(&step) => (line_data.len(), position - step),
+        None => (1, position + 1),
     }
 }
 
