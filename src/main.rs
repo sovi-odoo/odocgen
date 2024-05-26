@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::Write, rc::Rc};
+use std::{collections::HashMap, fs::File, io::Write, path::Path, rc::Rc};
 use clap::Parser;
 use rustpython_parser::ast::{Ranged, TextSize};
 
@@ -8,6 +8,10 @@ struct Cli {
     /// Directory to write output in (deleted if exists)
     #[arg(long, short)]
     output: String,
+
+    /// Name of the branch the documentation is generated for
+    #[arg(long, short)]
+    branch: String,
 
     /// Directories to find addons in (e.g. "odoo/addons")
     addons_dirs: Vec<String>,
@@ -300,10 +304,11 @@ fn main() {
         c_data.inherits.sort_by(|x, y| x.filename.cmp(&y.filename));
     }
 
-    write_output(&state, &cli.output).unwrap();
+    let output = Path::new(&cli.output).to_str().unwrap();
+    write_output(&state, output, &cli.branch).unwrap();
 }
 
-fn write_output(state: &State, output: &str) -> std::io::Result<()> {
+fn write_output(state: &State, output: &str, branch: &str) -> std::io::Result<()> {
     match std::fs::remove_dir_all(output) {
         Ok(()) => (),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => (),
@@ -313,9 +318,12 @@ fn write_output(state: &State, output: &str) -> std::io::Result<()> {
     std::fs::create_dir_all(format!("{output}/class"))?;
 
     std::fs::write(format!("{output}/index.js"), include_bytes!("../embeded/index.js"))?;
-    std::fs::write(format!("{output}/index.html"), include_bytes!("../embeded/index.html"))?;
     std::fs::write(format!("{output}/class/class.js"), include_bytes!("../embeded/class.js"))?;
     std::fs::write(format!("{output}/class/class.css"), include_bytes!("../embeded/class.css"))?;
+
+    let index_html = include_str!("../embeded/index.html").replace("{{branch}}", &format!("[{branch}]"));
+    std::fs::write(format!("{output}/index.html"), index_html.as_bytes())?;
+    std::mem::drop(index_html);
 
     let quotes = include_str!("../embeded/quotes.list")
         .split('\n')
