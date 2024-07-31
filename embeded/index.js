@@ -84,17 +84,15 @@ function updatePage() {
         }
     }
 
-    for (const mName in globalIndex.methods) {
+    for (const [mName, mData] of globalIndex.methods) {
         if (hasNeedles(mName)) {
-            const mData = globalIndex.methods[mName]
             found(() => buildMemberElement("method", mName, mData))
             if (count === rangeEnd) return
         }
     }
 
-    for (const fName in globalIndex.fields) {
+    for (const [fName, fData] of globalIndex.fields) {
         if (hasNeedles(fName)) {
-            const fData = globalIndex.fields[fName]
             found(() => buildMemberElement("field", fName, fData))
             if (count === rangeEnd) return
         }

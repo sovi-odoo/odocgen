@@ -252,6 +252,7 @@ impl State {
     }
 }
 
+/// Get the index of all newlines
 fn parse_line_data(code: &str) -> Vec<usize> {
     let mut result = Vec::new();
     for (i, b) in code.bytes().enumerate() {
@@ -339,37 +340,37 @@ fn write_output(state: &State, output: &str, branch: &str) -> std::io::Result<()
     }
     db_js.write_all(b"],")?;
 
-    db_js.write_all(b"methods:{")?;
+    db_js.write_all(b"methods:[")?;
     for (c_name, c_data) in state.classes.sorted_iter() {
         if let Some(orig) = &c_data.original {
             for m_name in orig.methods.sorted_keys() {
-                write!(&mut db_js, "{m_name:?}:{{o:true,c:{c_name:?}}},")?;
+                write!(&mut db_js, "[{m_name:?},{{o:true,c:{c_name:?}}}],")?;
             }
         }
 
         for data in c_data.inherits.iter() {
             for m_name in data.methods.keys() {
-                write!(&mut db_js, "{m_name:?}:{{o:false,c:{c_name:?}}},")?;
+                write!(&mut db_js, "[{m_name:?},{{o:false,c:{c_name:?}}}],")?;
             }
         }
     }
-    db_js.write_all(b"},")?;
+    db_js.write_all(b"],")?;
 
-    db_js.write_all(b"fields:{")?;
+    db_js.write_all(b"fields:[")?;
     for (c_name, c_data) in state.classes.sorted_iter() {
         if let Some(orig) = &c_data.original {
             for f_name in orig.fields.keys() {
-                write!(&mut db_js, "{f_name:?}:{{o:true,c:{c_name:?}}},")?;
+                write!(&mut db_js, "[{f_name:?},{{o:true,c:{c_name:?}}}],")?;
             }
         }
 
         for data in c_data.inherits.iter() {
             for f_name in data.fields.keys() {
-                write!(&mut db_js, "{f_name:?}:{{o:false,c:{c_name:?}}},")?;
+                write!(&mut db_js, "[{f_name:?},{{o:false,c:{c_name:?}}}],")?;
             }
         }
     }
-    db_js.write_all(b"}\n")?;
+    db_js.write_all(b"]\n")?;
 
     db_js.write_all(b"};const globalQuoteList=[")?;
     for quote in quotes {
