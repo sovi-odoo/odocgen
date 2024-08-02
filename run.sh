@@ -4,7 +4,7 @@ set -e
 odoo_root=".."
 
 _run() {
-    exec cargo run --release -- -o output -b local "$@"
+    exec cargo run --release -- -o output -l local "$@"
 }
 
 if [ -d "$odoo_root/enterprise" ]

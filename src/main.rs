@@ -1,6 +1,24 @@
-use std::{collections::HashMap, fs::File, io::Write, path::Path, rc::Rc};
+use std::{collections::HashMap, fs::File, io::{IsTerminal, Write}, path::Path, rc::Rc};
 use clap::Parser;
 use rustpython_parser::ast::{Ranged, TextSize};
+
+#[derive(clap::ValueEnum, Default, PartialEq, Eq, Clone, Copy)]
+enum Interactive {
+    #[default]
+    Auto,
+    Yes,
+    No,
+}
+
+impl Interactive {
+    fn is_interactive(self) -> bool {
+        match self {
+            Self::Yes => true,
+            Self::No => false,
+            Self::Auto => std::io::stdout().is_terminal(),
+        }
+    }
+}
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -9,12 +27,16 @@ struct Cli {
     #[arg(long, short)]
     output: String,
 
-    /// Name of the branch the documentation is generated for
+    /// Label shown in the documentation home page's title
     #[arg(long, short)]
-    branch: String,
+    label: String,
 
     /// Directories to find addons in (e.g. "odoo/addons")
     addons_dirs: Vec<String>,
+
+    /// Whether the program should print control characters or not
+    #[arg(long, short, default_value = "auto")]
+    interactive: Interactive,
 }
 
 #[derive(Debug, Default)]
@@ -282,16 +304,45 @@ fn find_line_col(line_data: &[usize], position: TextSize) -> (usize, usize) {
 }
 
 fn main() {
+    macro_rules! fprint {
+        ($($x: tt)*) => {
+            ::std::print!($($x)*);
+            ::std::io::stdout().flush().unwrap();
+        };
+    }
+
     let cli = Cli::parse();
     let mut state = State::default();
-    for addons_path in cli.addons_dirs {
+
+    let mut addon_count = 0_usize;
+    let total_addon_count: usize = cli.addons_dirs
+        .iter()
+        .map(|x| std::fs::read_dir(x).unwrap().count())
+        .sum();
+
+    let (line_prefix, line_suffix) = if cli.interactive.is_interactive() {
+        ("\r\x1b[K", "")
+    } else {
+        ("", "\n")
+    };
+
+    for addons_path in cli.addons_dirs.iter() {
         for addons_entry in std::fs::read_dir(&addons_path).unwrap() {
-            let models_path = addons_entry.unwrap().path().join("models");
+            addon_count += 1;
+
+            let addons_path = addons_entry.unwrap().path();
+            let models_path = addons_path.join("models");
             match std::fs::metadata(&models_path) {
                 Ok(metadata) if metadata.is_dir() => (),
                 _ => continue,
             }
-            
+
+            let percent_done = (addon_count * 100) / total_addon_count;
+            fprint!(
+                "{line_prefix}[{percent_done:>3}%] Scanning addon {}...{line_suffix}",
+                addons_path.file_name().unwrap().to_string_lossy(),
+            );
+
             for models_entry in std::fs::read_dir(&models_path).unwrap() {
                 let models_entry = models_entry.unwrap().path().to_str().unwrap().to_string();
                 if models_entry.ends_with(".py") {
@@ -306,10 +357,12 @@ fn main() {
     }
 
     let output = Path::new(&cli.output).to_str().unwrap();
-    write_output(&state, output, &cli.branch).unwrap();
+    fprint!("{line_prefix}Writing documentation to \"{output}\"... ");
+    write_output(&state, output, &cli.label).unwrap();
+    println!("OK");
 }
 
-fn write_output(state: &State, output: &str, branch: &str) -> std::io::Result<()> {
+fn write_output(state: &State, output: &str, label: &str) -> std::io::Result<()> {
     match std::fs::remove_dir_all(output) {
         Ok(()) => (),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => (),
@@ -322,7 +375,7 @@ fn write_output(state: &State, output: &str, branch: &str) -> std::io::Result<()
     std::fs::write(format!("{output}/class/class.js"), include_bytes!("../embeded/class.js"))?;
     std::fs::write(format!("{output}/class/class.css"), include_bytes!("../embeded/class.css"))?;
 
-    let index_html = include_str!("../embeded/index.html").replace("{{branch}}", &format!("[{branch}]"));
+    let index_html = include_str!("../embeded/index.html").replace("{{branch}}", &format!("[{label}]"));
     std::fs::write(format!("{output}/index.html"), index_html.as_bytes())?;
     std::mem::drop(index_html);
 
